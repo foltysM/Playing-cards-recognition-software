@@ -16,21 +16,7 @@ int kernel_size = 3;
 vector<Point> pik;
 vector<Point> karo;
 vector<Point> trefl;
-vector<Point> one;
-vector<Point> two;
-vector<Point> three;
-vector<Point> four;
-vector<Point> five;
-vector<Point> six;
-vector<Point> seven;
-vector<Point> eight;
-vector<Point> nine;
-vector<Point> ten;
-vector<Point> jack;
-vector<Point> queen;
-vector<Point> king;
-vector<Point> ace;
-
+vector<Point> kier;
 
 int findTrefl()
 {
