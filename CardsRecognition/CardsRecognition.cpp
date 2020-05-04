@@ -1,17 +1,22 @@
 ﻿#include <iostream>
+#include "opencv2/imgproc/imgproc.hpp"
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <stdlib.h>
+#include <stdio.h>
 
 using namespace std;
 using namespace cv;
 
+Mat src, src_gray;
 Mat original, img;
 Mat dst, detected_edges;
 int edgeThresh = 1;
-int lowThreshold;
+int lowThreshold = 70;
 int const max_lowThreshold = 100;
 int ratio_t = 3;
 int kernel_size = 3;
+
 vector<Point> pik;
 vector<Point> karo;
 vector<Point> trefl;
@@ -30,6 +35,64 @@ vector<Point> jack;
 vector<Point> queen;
 vector<Point> king;
 vector<Point> ace;
+
+vector<Point> findTemplate(String source, int min, int max, bool show)
+{
+	src = imread(source, 1);
+
+	if (!src.data)
+	{
+		cout << "Sth went wrong";
+	}
+	pyrDown(src, src);
+	pyrDown(src, src);
+
+	/// Create a matrix of the same type and size as src (for dst)
+	dst.create(src.size(), src.type());
+
+	/// Convert the image to grayscale
+	cvtColor(src, src_gray, COLOR_BGR2GRAY);
+
+	/// Reduce noise with a kernel 3x3
+	blur(src_gray, detected_edges, Size(3, 3));
+
+	/// Canny detector
+	int product = lowThreshold * ratio_t;
+	Canny(detected_edges, detected_edges, lowThreshold, product, kernel_size);
+
+	/// Using Canny's output as a mask, we display our result
+	dst = Scalar::all(0);
+
+	src.copyTo(dst, detected_edges);
+
+	vector<vector<Point>> contours;
+	findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+
+	// Contours analyze
+	int i_max = 0;
+	int count = 0;
+	for (int i = 0; i < contours.size(); i++)
+	{
+		if (contours[i].size() >= contours[i_max].size())
+			i_max = i;
+		double area = contourArea(contours[i]);
+		if (area > min && area <max) // 3500 7500
+		{
+			
+			count++;
+		}
+	}
+	drawContours(src, contours, i_max, Scalar(0, 255, 0), 4, 8);
+	if (show)
+	{
+		namedWindow(source, WINDOW_NORMAL);
+		imshow(source, src);
+		namedWindow(source + "edges", WINDOW_NORMAL);
+		imshow(source + "edges", detected_edges);
+	}
+
+	return contours[i_max];
+}
 
 int findTwo()
 {
@@ -831,27 +894,10 @@ int findPik()
 	return 0;
 }
 
-void CannyThreshold(int, void*)
-{
-	/// Reduce noise with a kernel 3x3
-	blur(img, detected_edges, Size(3, 3));
-
-	/// Canny detector
-	int ratio_sum = lowThreshold * ratio_t;
-	Canny(detected_edges, detected_edges, lowThreshold, ratio_sum, kernel_size);
-
-	/// Using Canny's output as a mask, we display our result
-	dst = Scalar::all(0);
-
-	original.copyTo(dst, detected_edges);
-	namedWindow("afterCanny", WINDOW_NORMAL);
-	imshow("afterCanny", dst);
-}
-
 int method1()
 {
 	// Reads an image
-	Mat original = imread("three_kier.jpg", 1);
+	Mat original = imread("test/test20.jpg", 1);
 	if (!original.data)
 		return -1;
 
@@ -998,25 +1044,217 @@ int method1()
 
 int method2()
 {
-	// Reads an image
-	original = imread("test_red.jpg", 1);
-	if (!original.data)
+	//prepare templates 
+	trefl = findTemplate("trefl.jpg", 1, 100, false);
+	karo = findTemplate("karo.jpg", 1, 100, false); 
+	pik = findTemplate("pik.jpg", 1, 100, true);
+	kier = findTemplate("kier.jpg", 500, 10000, false);
+
+	two = findTemplate("numbers/two.jpg", 100, 10000, false);
+	three = findTemplate("numbers/three.jpg", 100, 10000, true);
+	four = findTemplate("numbers/four.jpg", 100, 10000, false);
+	five = findTemplate("numbers/five.jpg", 100, 10000, false);
+	six = findTemplate("numbers/six.jpg", 100, 10000, false);
+	seven = findTemplate("numbers/seven.jpg", 100, 10000, false);
+	eight = findTemplate("numbers/eight.jpg", 5000, 10000, false);
+	nine = findTemplate("numbers/nine.jpg", 1000000, 9000000, false);
+	ten = findTemplate("numbers/one.jpg", 1000, 10000, false);
+	jack = findTemplate("numbers/jack.jpg", 100, 10000, false);
+	queen = findTemplate("numbers/queen.jpg", 5000, 10000, false);
+	king = findTemplate("numbers/king.jpg", 100, 100000, true);
+	ace = findTemplate("numbers/ace.jpg", 100, 10000, false);
+
+	//TODO zlepianie kilku konturów w jeden, np. king
+
+	/// Load an image
+	src = imread("test/test15.jpg", 1);
+
+	if (!src.data)
+	{
 		return -1;
+	}
+	pyrDown(src, src);
+	pyrDown(src, src);
 
-	// Downsample
-	pyrDown(original, original);
+	/// Create a matrix of the same type and size as src (for dst)
+	dst.create(src.size(), src.type());
 
-	dst.create(original.size(), original.type());
-	
-	// Conversion to grayscale
-	cvtColor(original, img, COLOR_BGR2GRAY);
-	namedWindow("image", WINDOW_NORMAL);
-	imshow("image", original);
+	/// Convert the image to grayscale
+	cvtColor(src, src_gray, COLOR_BGR2GRAY);
 
-	//Canny
-	createTrackbar("Min Threshold:", "afterCanny", &lowThreshold, max_lowThreshold, CannyThreshold);
-	CannyThreshold(0, 0);
+	/// Create a window
+	namedWindow("Edge Map", WINDOW_AUTOSIZE);
+
+	/// Reduce noise with a kernel 3x3
+	blur(src_gray, detected_edges, Size(3, 3));
+
+	/// Canny detector
+	Canny(detected_edges, detected_edges, lowThreshold, lowThreshold * ratio_t, kernel_size);
+
+	/// Using Canny's output as a mask, we display our result
+	dst = Scalar::all(0);
+
+	src.copyTo(dst, detected_edges);
+	imshow("Edge Map", detected_edges);
+
+	vector<vector<Point>> contours;
+	findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+
+	// Contours analyze
+	int count = 0;
+	for (int i = 0; i < contours.size(); i++)
+	{
+		double area = contourArea(contours[i]);
+		if (area > 5 && area<100000) // 3500 7500
+		{
+			drawContours(src, contours, i, Scalar(0, 255, 0), 4, 8);
+			count++;
+		}
+	}
+
+	namedWindow("After contours", WINDOW_NORMAL);
+	imshow("After contours", src);
+
+	// comparison
+	for (int i = 0; i < contours.size(); i++)
+	{
+		bool recognised = false;
+		double a, b, c;
+		//PIK
+		a = matchShapes(pik, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(pik, contours[i], CONTOURS_MATCH_I3, 0);
+		c = matchShapes(pik, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 5 && a < 4 && c<9)
+			cout << "PIK " << i << " " << a << " " << b << " "<<c<<endl;
+		//TREFL
+		a = matchShapes(trefl, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(trefl, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.05 && a < 0.045)
+			cout << "TREFL " << i << " " << a << " " << b << endl;
+		//KARO
+		a = matchShapes(karo, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(karo, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.03 && a < 0.025)
+			cout << "KARO " << i << " " << a << " " << b << endl;
+		//KIER
+		a = matchShapes(kier, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(kier, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+			cout << "KIER " << i << " " << a << " " << b << endl;
+		//TWO
+		a = matchShapes(two, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(two, contours[i], CONTOURS_MATCH_I3, 0);
+		c = matchShapes(two, contours[i], CONTOURS_MATCH_I2, 0);
+		if (a < 0.8 && b < 0.09) // 0,055 0,05
+			cout << "TWO " << i << " " << a << " " << b << " " << c << endl;
+
+		//THREE
+		a = matchShapes(three, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(three, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.05 && a < 0.045)
+		{
+			cout << "THREE " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//FOUR
+		a = matchShapes(four, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(four, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "FOUR " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//FIVE
+		a = matchShapes(five, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(five, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "FIVE " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//SIX
+		a = matchShapes(six, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(six, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "SIX " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//SEVEN
+		a = matchShapes(seven, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(seven, contours[i], CONTOURS_MATCH_I3, 0);
+		c = matchShapes(seven, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.1 && a < 0.5 && c < 0.8)
+		{
+			cout << "SEVEN " << i << " " << a << " " << b << " " << c << endl;
+			recognised = true;
+		}		
+		//NINE
+		a = matchShapes(nine, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(nine, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "NINE " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//TEN
+		a = matchShapes(ten, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(ten, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "TEN " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//JACK
+		a = matchShapes(jack, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(jack, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "JACK " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//QUEEN
+		a = matchShapes(queen, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(queen, contours[i], CONTOURS_MATCH_I3, 0);
+		c = matchShapes(queen, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.01 && a < 0.015)
+		{
+			cout << "QUEEN " << i << " " << a << " " << b << " " << c << endl;
+			recognised = true;
+		}
+		//KING
+		a = matchShapes(king, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(king, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "KING " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//ACE
+		a = matchShapes(ace, contours[i], CONTOURS_MATCH_I1, 0);
+		b = matchShapes(ace, contours[i], CONTOURS_MATCH_I3, 0);
+		if (b < 0.025 && a < 0.025)
+		{
+			cout << "ACE " << i << " " << a << " " << b << endl;
+			recognised = true;
+		}
+		//EIGHT
+		if (!recognised)
+		{
+			a = matchShapes(eight, contours[i], CONTOURS_MATCH_I1, 0);
+			b = matchShapes(eight, contours[i], CONTOURS_MATCH_I3, 0);
+			c = matchShapes(eight, contours[i], CONTOURS_MATCH_I2, 0);
+			if ((b < 0.02 && a < 0.01) || c < 0.02)
+				cout << "EIGHT " << i << " " << a << " " << b << " " << c << endl;
+		}
+
+	}
+
+
+
+	/// Wait until user exit program by pressing a key
 	waitKey(0);
+
 	return 0;
 }
 
