@@ -36,6 +36,117 @@ vector<Point> queen;
 vector<Point> king;
 vector<Point> ace;
 
+void fillRectangle(vector<vector<Point>> contours_input, Mat image)
+{
+	int imax = 0;
+	double areamax = 0;
+	for (int i = 0; i < contours_input.size(); i++)
+	{
+		RotatedRect rect = minAreaRect(contours_input[i]);
+		double width = rect.size.width;
+		double height = rect.size.height;
+		double area = width * height;
+		if (area > 1 && area > areamax)
+		{
+			areamax = area;
+			imax = i;
+		}
+
+	}
+	cout << "areamax " << areamax << endl;
+	cout << "i " << imax << endl;
+	cout << "END" << endl;
+	int imax2 = 0;
+	double areamax2 = 0;
+	for (int i = 0; i < contours_input.size(); i++)
+	{
+		RotatedRect rect = minAreaRect(contours_input[i]);
+		double width = rect.size.width;
+		double height = rect.size.height;
+		double area = abs(width) * abs(height);
+		if (area > 1 && area > areamax2  && area<areamax && i!=imax && area<250000)
+		{
+			areamax2 = area;
+			imax2 = i;
+		}
+	}
+	cout << "areamax2 " << areamax2 << endl;
+	cout << "i2 " << imax2 << endl;
+	cout << "END" << endl;
+
+	int s = contours_input[imax2].size();
+	//	Point points[1][s];
+
+	Point** points;
+	int w = 1;
+	points = new Point * [w];
+	
+	for (int i = 0; i < w; i++)
+	{
+		points[i] = new Point[s];
+	}
+	for (int i = 0; i < s; i++)
+	{
+		points[0][i] = contours_input[imax2][i];
+	}
+
+	const Point* ppt[1] = { points[0] };
+
+	int npt[] = { s };
+	int lineType = LINE_8;
+	fillPoly(image, ppt, npt, 1, Scalar(255, 255, 255), lineType);
+	namedWindow("Filled image", WINDOW_NORMAL);
+	imshow("Filled image", image);
+
+	waitKey(0);
+
+
+	for (int i = 0; i < w; i++)
+	{
+		delete[] points[i];
+	}
+}
+
+
+bool isRed(Mat image)
+{
+	bool red = false;
+	Mat image_HSV;
+	Mat1b mask1, mask2;
+	cvtColor(image, image_HSV, COLOR_BGR2HSV);
+	inRange(image_HSV, Scalar(0, 70, 50), Scalar(10, 255, 255), mask1);
+	inRange(image_HSV, Scalar(170, 70, 50), Scalar(180, 255, 255), mask2);
+
+	Mat1b mask = mask1 | mask2;
+
+	Mat structuring_element(3, 3, CV_8U, Scalar(1));
+	morphologyEx(mask, mask, MORPH_ERODE, structuring_element);
+
+	//namedWindow("mask", WINDOW_NORMAL);
+	//imshow("mask", mask);
+
+	
+	vector<vector<Point>> contours_red;
+	findContours(mask, contours_red, RETR_LIST, CHAIN_APPROX_SIMPLE);
+
+	int count = 0;
+	for (int i = 0; i < contours_red.size(); i++)
+	{
+		double area = contourArea(contours_red[i]);
+		if (area > 200)
+		{
+			drawContours(image, contours_red, i, Scalar(0, 255, 0), 4, 8);
+			red = true;
+			count++;
+		}
+	}
+	//namedWindow("After contours ifRed", WINDOW_NORMAL);
+	//imshow("After contours ifRed", image);
+
+	//waitKey(0);
+	return red;
+}
+
 vector<Point> findTemplate(String source, int min, int max, bool show)
 {
 	src = imread(source, 1);
@@ -64,6 +175,8 @@ vector<Point> findTemplate(String source, int min, int max, bool show)
 	dst = Scalar::all(0);
 
 	src.copyTo(dst, detected_edges);
+	Mat structuring_element(3, 3, CV_8U, Scalar(1));
+	morphologyEx(detected_edges, detected_edges, MORPH_CLOSE, structuring_element);
 
 	vector<vector<Point>> contours;
 	findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
@@ -97,7 +210,7 @@ vector<Point> findTemplate(String source, int min, int max, bool show)
 int findTwo()
 {
 	// Reads an image
-	Mat twooriginal = imread("numbers/two.jpg", 1);
+	Mat twooriginal = imread("templates/two.jpg", 1);
 	if (!twooriginal.data)
 		return -1;
 
@@ -144,7 +257,7 @@ int findTwo()
 int findThree()
 {
 	// Reads an image
-	Mat threeoriginal = imread("numbers/three.jpg", 1);
+	Mat threeoriginal = imread("templates/three.jpg", 1);
 	if (!threeoriginal.data)
 		return -1;
 
@@ -191,7 +304,7 @@ int findThree()
 int findFour()
 {
 	// Reads an image
-	Mat fouroriginal = imread("numbers/four.jpg", 1);
+	Mat fouroriginal = imread("templates/four.jpg", 1);
 	if (!fouroriginal.data)
 		return -1;
 
@@ -238,7 +351,7 @@ int findFour()
 int findFive()
 {
 	// Reads an image
-	Mat fiveoriginal = imread("numbers/five.jpg", 1);
+	Mat fiveoriginal = imread("templates/five.jpg", 1);
 	if (!fiveoriginal.data)
 		return -1;
 
@@ -285,7 +398,7 @@ int findFive()
 int findSix()
 {
 	// Reads an image
-	Mat sixoriginal = imread("numbers/six.jpg", 1);
+	Mat sixoriginal = imread("templates/six.jpg", 1);
 	if (!sixoriginal.data)
 		return -1;
 
@@ -332,7 +445,7 @@ int findSix()
 int findSeven()
 {
 	// Reads an image
-	Mat sevenoriginal = imread("numbers/seven.jpg", 1);
+	Mat sevenoriginal = imread("templates/seven.jpg", 1);
 	if (!sevenoriginal.data)
 		return -1;
 
@@ -379,7 +492,7 @@ int findSeven()
 int findEight()
 {
 	// Reads an image
-	Mat eightoriginal = imread("numbers/eight.jpg", 1);
+	Mat eightoriginal = imread("templates/eight.jpg", 1);
 	if (!eightoriginal.data)
 		return -1;
 
@@ -426,7 +539,7 @@ int findEight()
 int findNine()
 {
 	// Reads an image
-	Mat nineoriginal = imread("numbers/nine.jpg", 1);
+	Mat nineoriginal = imread("templates/nine.jpg", 1);
 	if (!nineoriginal.data)
 		return -1;
 
@@ -473,7 +586,7 @@ int findNine()
 int findTen()
 {
 	// Reads an image
-	Mat tenoriginal = imread("numbers/one.jpg", 1);
+	Mat tenoriginal = imread("templates/one.jpg", 1);
 	if (!tenoriginal.data)
 		return -1;
 
@@ -520,7 +633,7 @@ int findTen()
 int findJack()
 {
 	// Reads an image
-	Mat jackoriginal = imread("numbers/jack.jpg", 1);
+	Mat jackoriginal = imread("templates/jack.jpg", 1);
 	if (!jackoriginal.data)
 		return -1;
 
@@ -567,7 +680,7 @@ int findJack()
 int findQueen()
 {
 	// Reads an image
-	Mat queenoriginal = imread("numbers/queen.jpg", 1);
+	Mat queenoriginal = imread("templates/queen.jpg", 1);
 	if (!queenoriginal.data)
 		return -1;
 
@@ -614,7 +727,7 @@ int findQueen()
 int findKing()
 {
 	// Reads an image
-	Mat kingoriginal = imread("numbers/king.jpg", 1);
+	Mat kingoriginal = imread("templates/king.jpg", 1);
 	if (!kingoriginal.data)
 		return -1;
 
@@ -661,7 +774,7 @@ int findKing()
 int findAce()
 {
 	// Reads an image
-	Mat aceoriginal = imread("numbers/ace.jpg", 1);
+	Mat aceoriginal = imread("templates/ace.jpg", 1);
 	if (!aceoriginal.data)
 		return -1;
 
@@ -709,7 +822,7 @@ int findAce()
 int findTrefl()
 {
 	// Reads an image
-	Mat trefloriginal = imread("trefl.jpg", 1);
+	Mat trefloriginal = imread("templates/trefl.jpg", 1);
 	if (!trefloriginal.data)
 		return -1;
 
@@ -756,7 +869,7 @@ int findTrefl()
 int findKaro()
 {
 	// Reads an image
-	Mat karooriginal = imread("karo.jpg", 1);
+	Mat karooriginal = imread("templates/karo.jpg", 1);
 	if (!karooriginal.data)
 		return -1;
 
@@ -803,7 +916,7 @@ int findKaro()
 int findKier()
 {
 	// Reads an image
-	Mat kieroriginal = imread("kier.jpg", 1);
+	Mat kieroriginal = imread("templates/kier.jpg", 1);
 	if (!kieroriginal.data)
 		return -1;
 
@@ -850,7 +963,7 @@ int findKier()
 int findPik()
 {
 	// Reads an image
-	Mat pikoriginal = imread("pik.jpg", 1);
+	Mat pikoriginal = imread("templates/pik.jpg", 1);
 	if (!pikoriginal.data)
 		return -1;
 
@@ -897,7 +1010,7 @@ int findPik()
 int method1()
 {
 	// Reads an image
-	Mat original = imread("test/test20.jpg", 1);
+	Mat original = imread("test/test30.jpg", 1);
 	if (!original.data)
 		return -1;
 
@@ -1045,29 +1158,31 @@ int method1()
 int method2()
 {
 	//prepare templates 
-	trefl = findTemplate("trefl.jpg", 1, 100, false);
-	karo = findTemplate("karo.jpg", 1, 100, false); 
-	pik = findTemplate("pik.jpg", 1, 100, true);
-	kier = findTemplate("kier.jpg", 500, 10000, false);
+	trefl = findTemplate("templates/trefl.jpg", 1, 100, false);
+	karo = findTemplate("templates/karo.jpg", 1, 100, false); 
+	pik = findTemplate("templates/pik.jpg", 1, 100, false);
+	kier = findTemplate("templates/kier.jpg", 500, 10000, false);
 
-	two = findTemplate("numbers/two.jpg", 100, 10000, false);
-	three = findTemplate("numbers/three.jpg", 100, 10000, true);
-	four = findTemplate("numbers/four.jpg", 100, 10000, false);
-	five = findTemplate("numbers/five.jpg", 100, 10000, false);
-	six = findTemplate("numbers/six.jpg", 100, 10000, false);
-	seven = findTemplate("numbers/seven.jpg", 100, 10000, false);
-	eight = findTemplate("numbers/eight.jpg", 5000, 10000, false);
-	nine = findTemplate("numbers/nine.jpg", 1000000, 9000000, false);
-	ten = findTemplate("numbers/one.jpg", 1000, 10000, false);
-	jack = findTemplate("numbers/jack.jpg", 100, 10000, false);
-	queen = findTemplate("numbers/queen.jpg", 5000, 10000, false);
-	king = findTemplate("numbers/king.jpg", 100, 100000, true);
-	ace = findTemplate("numbers/ace.jpg", 100, 10000, false);
-
-	//TODO zlepianie kilku konturów w jeden, np. king
+	two = findTemplate("templates/two.jpg", 100, 10000, false);
+	three = findTemplate("templates/three.jpg", 100, 10000, false);
+	four = findTemplate("templates/four.jpg", 100, 10000, false);
+	five = findTemplate("templates/five.jpg", 100, 10000, false);
+	six = findTemplate("templates/six.jpg", 100, 10000, false);
+	seven = findTemplate("templates/seven.jpg", 100, 10000, false);
+	eight = findTemplate("templates/eight.jpg", 5000, 10000, false);
+	nine = findTemplate("templates/nine.jpg", 1000000, 9000000, false);
+	ten = findTemplate("templates/one.jpg", 1000, 10000, false);
+	jack = findTemplate("templates/jack.jpg", 100, 10000, false);
+	queen = findTemplate("templates/queen.jpg", 5000, 10000, false);
+	king = findTemplate("templates/king.jpg", 100, 100000, false);
+	ace = findTemplate("templates/ace.jpg", 100, 10000, false);
 
 	/// Load an image
-	src = imread("test/test15.jpg", 1);
+	string input = "";
+	cout << "Which test do You want to make? <30-51>" << endl;
+	cin >> input;
+
+	src = imread("test/test"+input+".jpg", 1);
 
 	if (!src.data)
 	{
@@ -1075,6 +1190,8 @@ int method2()
 	}
 	pyrDown(src, src);
 	pyrDown(src, src);
+
+	bool red = isRed(src);
 
 	/// Create a matrix of the same type and size as src (for dst)
 	dst.create(src.size(), src.type());
@@ -1100,6 +1217,9 @@ int method2()
 	vector<vector<Point>> contours;
 	findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
+	if(contours.size()>50)
+		fillRectangle(contours, src);
+
 	// Contours analyze
 	int count = 0;
 	for (int i = 0; i < contours.size(); i++)
@@ -1115,51 +1235,71 @@ int method2()
 	namedWindow("After contours", WINDOW_NORMAL);
 	imshow("After contours", src);
 
+	
+
 	// comparison
+	bool recognised = false;
 	for (int i = 0; i < contours.size(); i++)
 	{
-		bool recognised = false;
 		double a, b, c;
-		//PIK
-		a = matchShapes(pik, contours[i], CONTOURS_MATCH_I1, 0);
-		b = matchShapes(pik, contours[i], CONTOURS_MATCH_I3, 0);
-		c = matchShapes(pik, contours[i], CONTOURS_MATCH_I2, 0);
-		if (b < 5 && a < 4 && c<9)
-			cout << "PIK " << i << " " << a << " " << b << " "<<c<<endl;
-		//TREFL
-		a = matchShapes(trefl, contours[i], CONTOURS_MATCH_I1, 0);
-		b = matchShapes(trefl, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.05 && a < 0.045)
-			cout << "TREFL " << i << " " << a << " " << b << endl;
-		//KARO
-		a = matchShapes(karo, contours[i], CONTOURS_MATCH_I1, 0);
-		b = matchShapes(karo, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.03 && a < 0.025)
-			cout << "KARO " << i << " " << a << " " << b << endl;
-		//KIER
-		a = matchShapes(kier, contours[i], CONTOURS_MATCH_I1, 0);
-		b = matchShapes(kier, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
-			cout << "KIER " << i << " " << a << " " << b << endl;
+		
+		if (red)
+		{
+			//KARO
+			a = matchShapes(karo, contours[i], CONTOURS_MATCH_I1, 0);
+			b = matchShapes(karo, contours[i], CONTOURS_MATCH_I3, 0);
+			c = matchShapes(karo, contours[i], CONTOURS_MATCH_I2, 0);
+			if (b < 0.1 && a < 0.1 && c < 0.15)
+			{
+				cout << "KARO " << i << " " << a << " " << b << " " << c << endl;
+			}
+			//KIER
+			a = matchShapes(kier, contours[i], CONTOURS_MATCH_I1, 0);
+			b = matchShapes(kier, contours[i], CONTOURS_MATCH_I3, 0);
+			if (b < 0.025 && a < 0.025)
+			{
+				cout << "KIER " << i << " " << a << " " << b << endl;
+			}
+		}
+		else {
+			//PIK
+			double a, b, c;
+			a = matchShapes(pik, contours[i], CONTOURS_MATCH_I1, 0);
+			b = matchShapes(pik, contours[i], CONTOURS_MATCH_I3, 0);
+			c = matchShapes(pik, contours[i], CONTOURS_MATCH_I2, 0);
+			if (b < 0.05 && a < 0.05 && c < 0.3)
+				cout << "PIK " << i << " " << a << " " << b << " " << c << endl;
+
+			//TREFL
+			a = matchShapes(trefl, contours[i], CONTOURS_MATCH_I1, 0);
+			b = matchShapes(trefl, contours[i], CONTOURS_MATCH_I3, 0);
+			c = matchShapes(trefl, contours[i], CONTOURS_MATCH_I2, 0);
+			if (b < 0.30 && a < 0.30 && c < 0.7)
+			{
+				cout << "TREFL " << i << " " << a << " " << b << " " << " " << c << endl;
+			}
+		}
 		//TWO
 		a = matchShapes(two, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(two, contours[i], CONTOURS_MATCH_I3, 0);
 		c = matchShapes(two, contours[i], CONTOURS_MATCH_I2, 0);
-		if (a < 0.8 && b < 0.09) // 0,055 0,05
+		if (a < 2 && b < 0.3 && c<0.9) // 0,055 0,05
 			cout << "TWO " << i << " " << a << " " << b << " " << c << endl;
 
 		//THREE
 		a = matchShapes(three, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(three, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.05 && a < 0.045)
+		c = matchShapes(three, contours[i], CONTOURS_MATCH_I2, 0);
+
+		if (b < 0.25 && a < 0.8 && c<0.9)
 		{
-			cout << "THREE " << i << " " << a << " " << b << endl;
+			cout << "THREE " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
 		}
 		//FOUR
 		a = matchShapes(four, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(four, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		if (b < 0.25 && a < 0.25)
 		{
 			cout << "FOUR " << i << " " << a << " " << b << endl;
 			recognised = true;
@@ -1167,9 +1307,10 @@ int method2()
 		//FIVE
 		a = matchShapes(five, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(five, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(five, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.25 && a < 0.25 && c<1)
 		{
-			cout << "FIVE " << i << " " << a << " " << b << endl;
+			cout << "FIVE " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
 		}
 		//SIX
@@ -1192,17 +1333,19 @@ int method2()
 		//NINE
 		a = matchShapes(nine, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(nine, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(nine, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.1 && a < 0.1 && c<0.2)
 		{
-			cout << "NINE " << i << " " << a << " " << b << endl;
+			cout << "NINE " << i << " " << a << " " << b << " "<< c<< endl;
 			recognised = true;
 		}
 		//TEN
 		a = matchShapes(ten, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(ten, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(ten, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 1 && a < 1)
 		{
-			cout << "TEN " << i << " " << a << " " << b << endl;
+			cout << "TEN " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
 		}
 		//JACK
@@ -1213,15 +1356,7 @@ int method2()
 			cout << "JACK " << i << " " << a << " " << b << endl;
 			recognised = true;
 		}
-		//QUEEN
-		a = matchShapes(queen, contours[i], CONTOURS_MATCH_I1, 0);
-		b = matchShapes(queen, contours[i], CONTOURS_MATCH_I3, 0);
-		c = matchShapes(queen, contours[i], CONTOURS_MATCH_I2, 0);
-		if (b < 0.01 && a < 0.015)
-		{
-			cout << "QUEEN " << i << " " << a << " " << b << " " << c << endl;
-			recognised = true;
-		}
+		
 		//KING
 		a = matchShapes(king, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(king, contours[i], CONTOURS_MATCH_I3, 0);
@@ -1230,35 +1365,46 @@ int method2()
 			cout << "KING " << i << " " << a << " " << b << endl;
 			recognised = true;
 		}
-		//ACE
+		//ACE OK
 		a = matchShapes(ace, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(ace, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(ace, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.5 && a < 0.5 && c<0.4)
 		{
-			cout << "ACE " << i << " " << a << " " << b << endl;
+			cout << "ACE " << i << " " << a << " " << b << " "<<c<< endl;
 			recognised = true;
 		}
-		//EIGHT
-		if (!recognised)
+		
+		
+
+	}
+	if (!recognised)
+	{
+		for (int i = 0; i < contours.size(); i++)
 		{
+			double a, b, c;
+			//EIGHT
 			a = matchShapes(eight, contours[i], CONTOURS_MATCH_I1, 0);
 			b = matchShapes(eight, contours[i], CONTOURS_MATCH_I3, 0);
 			c = matchShapes(eight, contours[i], CONTOURS_MATCH_I2, 0);
-			if ((b < 0.02 && a < 0.01) || c < 0.02)
+			if (b < 0.15 && a < 0.2 && c < 0.2)
 				cout << "EIGHT " << i << " " << a << " " << b << " " << c << endl;
+			//QUEEN
+			a = matchShapes(queen, contours[i], CONTOURS_MATCH_I1, 0);
+			b = matchShapes(queen, contours[i], CONTOURS_MATCH_I3, 0);
+			c = matchShapes(queen, contours[i], CONTOURS_MATCH_I2, 0);
+			if (b < 0.1 && a < 0.1)
+			{
+				cout << "QUEEN " << i << " " << a << " " << b << " " << c << endl;
+			}
 		}
-
 	}
 
-
-
-	/// Wait until user exit program by pressing a key
 	waitKey(0);
-
 	return 0;
 }
 
-int method3()
+/*int method3()
 {
 	Mat threshed;
 
@@ -1309,7 +1455,7 @@ int method3()
 	
 	waitKey(0); 
 	return 0;
-}
+}*/
 
 int main()
 {
@@ -1367,7 +1513,6 @@ int main()
 	cout << "Wybierz metode wykrywania krawedzi:\n\t";
 	cout << "1. Adaptive threshold --> operacje morfologiczne\n\t";
 	cout << "2. Metoda Canny'ego\n\t";
-	cout << "3. Konwersja do HSV i usuniecie niepotrzebnych kolorow\n\t";
 	cout << "0. Wyjscie\n";
 
 	int choice = 0;
@@ -1391,12 +1536,12 @@ int main()
 			return 0;
 		break;
 
-	case 3:
+	/*case 3:
 		if (method3() == -1)
 			return -1;
 		else
 			return 0;
-		break;
+		break;*/
 
 	default:
 		cout << "Something went wrong";
