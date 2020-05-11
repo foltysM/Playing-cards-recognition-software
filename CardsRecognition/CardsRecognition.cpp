@@ -1233,9 +1233,9 @@ int method2()
 
 		findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 	}
-
-	namedWindow("Edge Map", WINDOW_AUTOSIZE);
-	imshow("Edge Map", detected_edges);
+	// DEBUG ONLY
+	//namedWindow("Edge Map", WINDOW_AUTOSIZE);
+	//imshow("Edge Map", detected_edges);
 	bool red = isRed(src);
 	
 	// Contours analyze
@@ -1249,9 +1249,9 @@ int method2()
 			count++;
 		}
 	}
-
-	namedWindow("After contours", WINDOW_NORMAL);
-	imshow("After contours", src);
+	// DEBUG ONLY
+	//namedWindow("After contours", WINDOW_NORMAL);
+	//imshow("After contours", src);
 
 	
 
@@ -1355,15 +1355,7 @@ int method2()
 			cout << "NINE " << i << " " << a << " " << b << " "<< c<< endl;
 			recognised = true;
 		}
-		//TEN
-		a = matchShapes(ten, contours[i], CONTOURS_MATCH_I1, 0);
-		b = matchShapes(ten, contours[i], CONTOURS_MATCH_I3, 0);
-		c = matchShapes(ten, contours[i], CONTOURS_MATCH_I2, 0);
-		if (b < 0.1 && a < 0.1 && c<0.1)
-		{
-			cout << "TEN " << i << " " << a << " " << b << " "<<c<<endl;
-			recognised = true;
-		}
+		
 		//JACK
 		a = matchShapes(jack, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(jack, contours[i], CONTOURS_MATCH_I3, 0);
@@ -1397,10 +1389,11 @@ int method2()
 	}
 	if (!recognised)
 	{
+		bool isQueen = false;
 		for (int i = 0; i < contours.size(); i++)
 		{
 			double a, b, c;
-			bool isQueen = false;
+			
 			//QUEEN
 			a = matchShapes(queen, contours[i], CONTOURS_MATCH_I1, 0);
 			b = matchShapes(queen, contours[i], CONTOURS_MATCH_I3, 0);
@@ -1418,6 +1411,23 @@ int method2()
 				c = matchShapes(eight, contours[i], CONTOURS_MATCH_I2, 0);
 				if (b < 0.15 && a < 0.2 && c < 0.2)
 					cout << "EIGHT " << i << " " << a << " " << b << " " << c << endl;
+				
+			}
+		}
+		if (!isQueen)
+		{
+			for (int i = 0; i < contours.size(); i++)
+			{
+				double a, b, c;
+				//TEN
+				a = matchShapes(ten, contours[i], CONTOURS_MATCH_I1, 0);
+				b = matchShapes(ten, contours[i], CONTOURS_MATCH_I3, 0);
+				c = matchShapes(ten, contours[i], CONTOURS_MATCH_I2, 0);
+				if (b < 0.1 && a < 0.05 && c < 0.1)
+				{
+					cout << "TEN " << i << " " << a << " " << b << " " << c << endl;
+					recognised = true;
+				}
 			}
 		}
 	}
@@ -1546,13 +1556,13 @@ int main()
 	if (findAce() == -1)
 		return -1;
 
-	cout << "Wybierz metode wykrywania krawedzi:\n\t";
+	/*cout << "Wybierz metode wykrywania krawedzi:\n\t";
 	cout << "1. Adaptive threshold --> operacje morfologiczne\n\t";
 	cout << "2. Metoda Canny'ego\n\t";
-	cout << "0. Wyjscie\n";
+	cout << "0. Wyjscie\n";*/
 
-	int choice = 0;
-	cin >> choice;
+	int choice = 2;
+	//cin >> choice;
 	switch (choice)
 	{
 	case 0:
