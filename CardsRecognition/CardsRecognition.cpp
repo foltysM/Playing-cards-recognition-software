@@ -12,7 +12,7 @@ Mat src, src_gray;
 Mat original, img;
 Mat dst, detected_edges;
 int edgeThresh = 1;
-int lowThreshold = 70;
+unsigned int lowThreshold = 70;
 int const max_lowThreshold = 100;
 int ratio_t = 3;
 int kernel_size = 3;
@@ -36,7 +36,7 @@ vector<Point> queen;
 vector<Point> king;
 vector<Point> ace;
 
-void fillRectangle(vector<vector<Point>> contours_input, Mat image)
+Mat fillRectangle(vector<vector<Point>> contours_input, Mat image)
 {
 	int imax = 0;
 	double areamax = 0;
@@ -53,9 +53,9 @@ void fillRectangle(vector<vector<Point>> contours_input, Mat image)
 		}
 
 	}
-	cout << "areamax " << areamax << endl;
-	cout << "i " << imax << endl;
-	cout << "END" << endl;
+	//cout << "areamax " << areamax << endl;
+	//cout << "i " << imax << endl;
+	//cout << "END" << endl;
 	int imax2 = 0;
 	double areamax2 = 0;
 	for (int i = 0; i < contours_input.size(); i++)
@@ -70,9 +70,9 @@ void fillRectangle(vector<vector<Point>> contours_input, Mat image)
 			imax2 = i;
 		}
 	}
-	cout << "areamax2 " << areamax2 << endl;
-	cout << "i2 " << imax2 << endl;
-	cout << "END" << endl;
+	//cout << "areamax2 " << areamax2 << endl;
+	//cout << "i2 " << imax2 << endl;
+	//cout << "END" << endl;
 
 	int s = contours_input[imax2].size();
 	//	Point points[1][s];
@@ -95,16 +95,17 @@ void fillRectangle(vector<vector<Point>> contours_input, Mat image)
 	int npt[] = { s };
 	int lineType = LINE_8;
 	fillPoly(image, ppt, npt, 1, Scalar(255, 255, 255), lineType);
-	namedWindow("Filled image", WINDOW_NORMAL);
-	imshow("Filled image", image);
+	//namedWindow("Filled image", WINDOW_NORMAL);
+	//imshow("Filled image", image);
 
-	waitKey(0);
+	//waitKey(0);
 
 
 	for (int i = 0; i < w; i++)
 	{
 		delete[] points[i];
 	}
+	return image;
 }
 
 
@@ -1171,7 +1172,7 @@ int method2()
 	seven = findTemplate("templates/seven.jpg", 100, 10000, false);
 	eight = findTemplate("templates/eight.jpg", 5000, 10000, false);
 	nine = findTemplate("templates/nine.jpg", 1000000, 9000000, false);
-	ten = findTemplate("templates/one.jpg", 1000, 10000, false);
+	ten = findTemplate("templates/zero.jpg", 1000, 10000, false);
 	jack = findTemplate("templates/jack.jpg", 100, 10000, false);
 	queen = findTemplate("templates/queen.jpg", 5000, 10000, false);
 	king = findTemplate("templates/king.jpg", 100, 100000, false);
@@ -1191,16 +1192,13 @@ int method2()
 	pyrDown(src, src);
 	pyrDown(src, src);
 
-	bool red = isRed(src);
+	
 
 	/// Create a matrix of the same type and size as src (for dst)
 	dst.create(src.size(), src.type());
 
 	/// Convert the image to grayscale
 	cvtColor(src, src_gray, COLOR_BGR2GRAY);
-
-	/// Create a window
-	namedWindow("Edge Map", WINDOW_AUTOSIZE);
 
 	/// Reduce noise with a kernel 3x3
 	blur(src_gray, detected_edges, Size(3, 3));
@@ -1212,14 +1210,34 @@ int method2()
 	dst = Scalar::all(0);
 
 	src.copyTo(dst, detected_edges);
-	imshow("Edge Map", detected_edges);
-
+	
 	vector<vector<Point>> contours;
 	findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
 
-	if(contours.size()>50)
-		fillRectangle(contours, src);
+	if (contours.size() > 50)
+	{
+		src = fillRectangle(contours, src);
+		/// Convert the image to grayscale
+		cvtColor(src, src_gray, COLOR_BGR2GRAY);
 
+		/// Reduce noise with a kernel 3x3
+		blur(src_gray, detected_edges, Size(3, 3));
+
+		/// Canny detector
+		Canny(detected_edges, detected_edges, lowThreshold, lowThreshold * ratio_t, kernel_size);
+
+		/// Using Canny's output as a mask, we display our result
+		dst = Scalar::all(0);
+
+		src.copyTo(dst, detected_edges);
+
+		findContours(detected_edges, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+	}
+
+	namedWindow("Edge Map", WINDOW_AUTOSIZE);
+	imshow("Edge Map", detected_edges);
+	bool red = isRed(src);
+	
 	// Contours analyze
 	int count = 0;
 	for (int i = 0; i < contours.size(); i++)
@@ -1227,7 +1245,7 @@ int method2()
 		double area = contourArea(contours[i]);
 		if (area > 5 && area<100000) // 3500 7500
 		{
-			drawContours(src, contours, i, Scalar(0, 255, 0), 4, 8);
+			drawContours(src, contours, i, Scalar(0, 255, 0), 2, 8);
 			count++;
 		}
 	}
@@ -1239,6 +1257,7 @@ int method2()
 
 	// comparison
 	bool recognised = false;
+	bool pik_recognised = false;
 	for (int i = 0; i < contours.size(); i++)
 	{
 		double a, b, c;
@@ -1256,9 +1275,10 @@ int method2()
 			//KIER
 			a = matchShapes(kier, contours[i], CONTOURS_MATCH_I1, 0);
 			b = matchShapes(kier, contours[i], CONTOURS_MATCH_I3, 0);
-			if (b < 0.025 && a < 0.025)
+			c = matchShapes(kier, contours[i], CONTOURS_MATCH_I2, 0);
+			if (b < 0.1 && a < 0.1 && 0.2)
 			{
-				cout << "KIER " << i << " " << a << " " << b << endl;
+				cout << "KIER " << i << " " << a << " " << b << " "<<c<<endl;
 			}
 		}
 		else {
@@ -1267,23 +1287,17 @@ int method2()
 			a = matchShapes(pik, contours[i], CONTOURS_MATCH_I1, 0);
 			b = matchShapes(pik, contours[i], CONTOURS_MATCH_I3, 0);
 			c = matchShapes(pik, contours[i], CONTOURS_MATCH_I2, 0);
-			if (b < 0.05 && a < 0.05 && c < 0.3)
-				cout << "PIK " << i << " " << a << " " << b << " " << c << endl;
-
-			//TREFL
-			a = matchShapes(trefl, contours[i], CONTOURS_MATCH_I1, 0);
-			b = matchShapes(trefl, contours[i], CONTOURS_MATCH_I3, 0);
-			c = matchShapes(trefl, contours[i], CONTOURS_MATCH_I2, 0);
-			if (b < 0.30 && a < 0.30 && c < 0.7)
+			if (b < 0.5 && a < 0.1 && c < 0.3) //if (b < 0.05 && a < 0.05 && c < 0.3)
 			{
-				cout << "TREFL " << i << " " << a << " " << b << " " << " " << c << endl;
+				cout << "PIK " << i << " " << a << " " << b << " " << c << endl;
+				pik_recognised = true;
 			}
 		}
 		//TWO
 		a = matchShapes(two, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(two, contours[i], CONTOURS_MATCH_I3, 0);
 		c = matchShapes(two, contours[i], CONTOURS_MATCH_I2, 0);
-		if (a < 2 && b < 0.3 && c<0.9) // 0,055 0,05
+		if (a < 1 && b < 0.1 && c<0.9) // 0,055 0,05
 			cout << "TWO " << i << " " << a << " " << b << " " << c << endl;
 
 		//THREE
@@ -1291,7 +1305,7 @@ int method2()
 		b = matchShapes(three, contours[i], CONTOURS_MATCH_I3, 0);
 		c = matchShapes(three, contours[i], CONTOURS_MATCH_I2, 0);
 
-		if (b < 0.25 && a < 0.8 && c<0.9)
+		if (b < 0.25 && a < 0.3 && c<0.5)
 		{
 			cout << "THREE " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
@@ -1299,16 +1313,17 @@ int method2()
 		//FOUR
 		a = matchShapes(four, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(four, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.25 && a < 0.25)
+		c = matchShapes(four, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.1 && a < 0.1)
 		{
-			cout << "FOUR " << i << " " << a << " " << b << endl;
+			cout << "FOUR " << i << " " << a << " " << b << " "<<c <<endl;
 			recognised = true;
 		}
 		//FIVE
 		a = matchShapes(five, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(five, contours[i], CONTOURS_MATCH_I3, 0);
 		c = matchShapes(five, contours[i], CONTOURS_MATCH_I2, 0);
-		if (b < 0.25 && a < 0.25 && c<1)
+		if (b < 0.25 && a < 0.25 && c < 1)
 		{
 			cout << "FIVE " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
@@ -1316,9 +1331,10 @@ int method2()
 		//SIX
 		a = matchShapes(six, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(six, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(six, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 0.09 && a < 0.15 && c<0.7)  //if (b < 0.07 && a < 0.1 && c<0.65)
 		{
-			cout << "SIX " << i << " " << a << " " << b << endl;
+			cout << "SIX " << i << " " << a << " " << b << " "<< c<< endl;
 			recognised = true;
 		}
 		//SEVEN
@@ -1343,7 +1359,7 @@ int method2()
 		a = matchShapes(ten, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(ten, contours[i], CONTOURS_MATCH_I3, 0);
 		c = matchShapes(ten, contours[i], CONTOURS_MATCH_I2, 0);
-		if (b < 1 && a < 1)
+		if (b < 0.1 && a < 0.1 && c<0.1)
 		{
 			cout << "TEN " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
@@ -1351,25 +1367,26 @@ int method2()
 		//JACK
 		a = matchShapes(jack, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(jack, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(jack, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 1 && a <  1 && c<1.5)
 		{
-			cout << "JACK " << i << " " << a << " " << b << endl;
+			cout << "JACK " << i << " " << a << " " << b << " " <<c<<endl;
 			recognised = true;
 		}
-		
 		//KING
 		a = matchShapes(king, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(king, contours[i], CONTOURS_MATCH_I3, 0);
-		if (b < 0.025 && a < 0.025)
+		c = matchShapes(king, contours[i], CONTOURS_MATCH_I2, 0);
+		if (b < 1 && a < 0.8 && c<1.5)
 		{
-			cout << "KING " << i << " " << a << " " << b << endl;
+			cout << "KING " << i << " " << a << " " << b << " "<<c<<endl;
 			recognised = true;
 		}
-		//ACE OK
+		//ACE 
 		a = matchShapes(ace, contours[i], CONTOURS_MATCH_I1, 0);
 		b = matchShapes(ace, contours[i], CONTOURS_MATCH_I3, 0);
 		c = matchShapes(ace, contours[i], CONTOURS_MATCH_I2, 0);
-		if (b < 0.5 && a < 0.5 && c<0.4)
+		if (b < 0.2 && a < 0.3 && c<1) 
 		{
 			cout << "ACE " << i << " " << a << " " << b << " "<<c<< endl;
 			recognised = true;
@@ -1383,19 +1400,38 @@ int method2()
 		for (int i = 0; i < contours.size(); i++)
 		{
 			double a, b, c;
-			//EIGHT
-			a = matchShapes(eight, contours[i], CONTOURS_MATCH_I1, 0);
-			b = matchShapes(eight, contours[i], CONTOURS_MATCH_I3, 0);
-			c = matchShapes(eight, contours[i], CONTOURS_MATCH_I2, 0);
-			if (b < 0.15 && a < 0.2 && c < 0.2)
-				cout << "EIGHT " << i << " " << a << " " << b << " " << c << endl;
+			bool isQueen = false;
 			//QUEEN
 			a = matchShapes(queen, contours[i], CONTOURS_MATCH_I1, 0);
 			b = matchShapes(queen, contours[i], CONTOURS_MATCH_I3, 0);
 			c = matchShapes(queen, contours[i], CONTOURS_MATCH_I2, 0);
-			if (b < 0.1 && a < 0.1)
+			if (b < 0.1 && a < 0.1 && c<0.16)
 			{
 				cout << "QUEEN " << i << " " << a << " " << b << " " << c << endl;
+				isQueen = true;
+			}
+			//EIGHT
+			if (!isQueen)
+			{
+				a = matchShapes(eight, contours[i], CONTOURS_MATCH_I1, 0);
+				b = matchShapes(eight, contours[i], CONTOURS_MATCH_I3, 0);
+				c = matchShapes(eight, contours[i], CONTOURS_MATCH_I2, 0);
+				if (b < 0.15 && a < 0.2 && c < 0.2)
+					cout << "EIGHT " << i << " " << a << " " << b << " " << c << endl;
+			}
+		}
+	}
+	if (!pik_recognised && !red)
+	{
+		for (int i = 0; i < contours.size(); i++)
+		{
+			//TREFL
+			double a = matchShapes(trefl, contours[i], CONTOURS_MATCH_I1, 0);
+			double b = matchShapes(trefl, contours[i], CONTOURS_MATCH_I3, 0);
+			double c = matchShapes(trefl, contours[i], CONTOURS_MATCH_I2, 0);
+			if (b < 0.30 && a < 0.30 && c < 0.7)
+			{
+				cout << "TREFL " << i << " " << a << " " << b << " " << " " << c << endl;
 			}
 		}
 	}
