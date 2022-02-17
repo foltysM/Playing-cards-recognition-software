@@ -26,10 +26,10 @@
 
 
 <div>
-<h3 align="center">Simplified docker files syntax validator</h3>
+<h3 align="center">Playing cards recognition software</h3>
 
   <p align="center">
-    Software that checks if syntax in docker compose file provided is correct. Checks for chosen keywords using BNF. Contains of lexer and parser part.
+    Playing cards recognition software. Made for traditional, 52 cards decks. For image given, outputs symbols recognised.
     <br />
     <a href="https://github.com/foltysM/Playing-cards-recognition-software"><strong>Explore the docs »</strong></a>
     <br />
@@ -51,6 +51,7 @@
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
+        <li><a href="#key-functions">Key functions</a></li>
         <li><a href="#built-with">Built With</a></li>
       </ul>
     </li>
@@ -73,17 +74,26 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-After providing the input file, the lexer will search for keywords in the file using Regex. Next, parser will check the syntax. If everything will be ok, 
-file structure will be shown in green color.  
+After providing the input file or choosing one of the built-in test images, process starts. Flow diagram is attached below.
+<p align="center">
+<img src="images/diagram.png" class="centerAlign" style="width:20%">
 
-![product-screenshot]
+</p>
 
-For every ile with incorrect syntax, error will be raised with short description. Moreover, the line and column of error will be indicated.
 
-![product-screenshot2]
+### Key functions
+* fillRectangle function fills card inner rectangle with white. It is called only when number of contours exceeds 50 - it's Jack, Queen or King.
+Area of maximal fitting rectangle is calculated for every contour. Last but not list biggest contour is filled with white using fillPoly function.
 
-Above, sample console output can be seen. 
+![queen1]
 
+* isRed function checks whether the card has black or red symbol. Original image is converted to HSV, then thresholding is made. As the next step, erosion is applied. Further, software searches for contours. If area of any exceeds 200, card contains red symbol. Below, image after thresholding can be seen
+
+![queen2]
+
+* findTemplate finds model contour on pre-prepared image. Image is scaled down and converted to grayscale. Next steps are similar to contours matching on test images. Returns the larges contour found.
+
+![two]
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -92,9 +102,9 @@ Above, sample console output can be seen.
 
 ### Built With
 
-* [Python](https://www.python.org/)
-* [bcolors](https://pypi.org/project/bcolors/)
-* [re](https://docs.python.org/3/library/re.html)
+* [C++](https://isocpp.org/)
+* [Visual Studio](https://visualstudio.microsoft.com/)
+* [OpenCV](https://opencv.org/)
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -113,15 +123,8 @@ To get a local copy up and running follow these simple example steps.
    ```commandline
    git clone https://github.com/foltysM/Playing-cards-recognition-software
    ```
-2. Install all necessary external dependencies. This may be done using the attached requirements file.
-   ```commandline
-   pip install -r requirements.txt
-   ```
-3. Enter your input file directory and name in `main.py`
-   ```python
-   VIDEO_NAME = 'test2.mp4'
-   ```
-4. Run program
+2. Install all necessary external references for OpenCV.
+3. Run program
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -129,9 +132,10 @@ To get a local copy up and running follow these simple example steps.
 <!-- ROADMAP -->
 ## Roadmap
 
-- [x] Finding keywords in input file
-- [x] Parsing tokens using BNF
-- [x] Precise errors handling
+- [x] Finding symbol models
+- [x] Recognizing card color
+- [x] Working for all 13 types of cards
+- [x] Accuracy > 90%
 
 
 See the [open issues](https://github.com/foltysM/Playing-cards-recognition-software/issues) for a full list of proposed features (and known issues).
@@ -204,3 +208,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 [output3]: images/output3.png
 [output4]: images/output4.png
 [output5]: images/output5.png
+[queen1]: images/queen.png
+[queen2]: images/red.png
+[two]: images/two_template.png
+[diagram]: images/diagram.png
