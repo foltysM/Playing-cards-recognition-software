@@ -53,6 +53,7 @@
       <ul>
         <li><a href="#key-functions">Key functions</a></li>
         <li><a href="#built-with">Built With</a></li>
+        <li><a href="#tests">Tests</a></li>
       </ul>
     </li>
     <li>
@@ -94,6 +95,45 @@ Area of maximal fitting rectangle is calculated for every contour. Last but not 
 * findTemplate finds model contour on pre-prepared image. Image is scaled down and converted to grayscale. Next steps are similar to contours matching on test images. Returns the larges contour found.
 
 ![two]
+
+### Tests
+* Test 1
+
+![test1]
+
+The output (Karo means Diamonds in Polish):
+
+![output1]
+
+* Test 2
+
+![test2]
+
+The output (Kier means Hearts in Polish):
+
+![output2]
+
+* Test 3
+
+![test3]
+
+The output (Trefl means Clubs in Polish):
+
+![output3]
+* Test 4
+
+![test4]
+
+The output (Karo means Diamonds in Polish):
+
+![output4]
+* Test 5
+
+![test5]
+
+The output (Pik means Spades in Polish):
+
+![output5]
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
